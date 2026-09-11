@@ -110,7 +110,7 @@ Resolve namespace: user request; `ENDOR_NAMESPACE`; `ENDOR_NAMESPACE` from the d
 
 ## Endor Project Resolution Preflight
 
-Parse the local git remote for a matching checkout; otherwise normalize a user repo URL, owner/repo, or project selector; never derive `owner/repo` from cwd. Read exact `spec.git.full_name=="<owner/repo>"`, explicit namespace, page size 2, fields `uuid,meta.name,meta.parent_uuid,spec.git`; no `--list-all`. No schema/describe probes or broad Project inventory. Explicit project name permits one exact `meta.name` fallback. Parent zero rows -> same selector with `--traverse`; otherwise omit it. Use local branch evidence when available; missing branch provenance blocks mutation, not read-only Endor evidence. Return status, UUID, scope/provenance, normalized repo, selectors, traverse, and gaps.
+Parse the local git remote for a matching checkout; otherwise normalize a user repo URL, owner/repo, or project selector to lowercase `owner/repo` (strip scheme, host, `.git`, and any trailing slash); never derive `owner/repo` from cwd. Read exact `spec.git.full_name=="<owner/repo-lowercased>"`, explicit namespace, page size 2, fields `uuid,meta.name,meta.parent_uuid,spec.git`; no `--list-all`. No schema/describe probes or broad Project inventory. Explicit project name permits one exact `meta.name` fallback. Parent zero rows -> same selector with `--traverse`; otherwise omit it. Use local branch evidence when available; missing branch provenance blocks mutation, not read-only Endor evidence. Return status, UUID, scope/provenance, normalized repo, selectors, traverse, and gaps.
 
 ## Endor Knowledge Pack
 
@@ -119,6 +119,7 @@ These notes augment the workflow above. Its output contracts, hard guardrails, a
 ### Global Rules
 
 - Context first; Namespace provenance; Efficient Endor queries; Large result delivery; Verified evidence only; Evidence ledger; Data gaps.
+- Git identity casing: Endor normalizes `spec.git.full_name` to lowercase. Lowercase the owner and repository before filtering on it — a GitHub display identity like `Contrast-Security-OSS/demo-netflicks` returns zero rows, while `contrast-security-oss/demo-netflicks` matches. Never lowercase `meta.name`, which keeps the original casing (`https://github.com/Contrast-Security-OSS/demo-netflicks.git`); use it verbatim. Treat zero rows from a correctly lowercased selector as a real miss: retry the same selector with `--traverse`, then report the project as absent. Never conclude a project is missing, unmonitored, or unscanned on the strength of a casing mismatch.
 - Large results: never `--list-all`. Scope every list to a project or namespace, then use `--count` for totals, `--group-aggregation-paths <field>` for grouped counts, `--group-unique-count-paths uuid` for duplicate detection (`count != unique_count` means duplicates), and `--field-mask` with `--page-size` no greater than 100 plus `--page-token`/`--page-id` to continue. Put `query_completeness=<bounded|aggregate|complete>;result_count=<n>;unique_count=<n>` in `evidence_queries[].reason`. Treat `deadline-exceeded` as a `data_gaps` entry and narrow the filter; never retry the same query unchanged.
 
 ### Evidence Gate Contract

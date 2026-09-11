@@ -411,6 +411,7 @@ These notes augment the workflow above. Its output contracts, hard guardrails, a
 ### Global Rules
 
 - Context first; Namespace provenance; Efficient Endor queries; Large result delivery; Verified evidence only; Evidence ledger; Data gaps.
+- Git identity casing: Endor normalizes `spec.git.full_name` to lowercase. Lowercase the owner and repository before filtering on it — a GitHub display identity like `Contrast-Security-OSS/demo-netflicks` returns zero rows, while `contrast-security-oss/demo-netflicks` matches. Never lowercase `meta.name`, which keeps the original casing (`https://github.com/Contrast-Security-OSS/demo-netflicks.git`); use it verbatim. Treat zero rows from a correctly lowercased selector as a real miss: retry the same selector with `--traverse`, then report the project as absent. Never conclude a project is missing, unmonitored, or unscanned on the strength of a casing mismatch.
 - Large results: never `--list-all`. Scope every list to a project or namespace, then use `--count` for totals, `--group-aggregation-paths <field>` for grouped counts, `--group-unique-count-paths uuid` for duplicate detection (`count != unique_count` means duplicates), and `--field-mask` with `--page-size` no greater than 100 plus `--page-token`/`--page-id` to continue. Put `query_completeness=<bounded|aggregate|complete>;result_count=<n>;unique_count=<n>` in `evidence_queries[].reason`. Treat `deadline-exceeded` as a `data_gaps` entry and narrow the filter; never retry the same query unchanged.
 
 ### Evidence Gate Contract
@@ -438,7 +439,7 @@ Diagnose Endor scan, integration, identity, notification, and runtime issues wit
 - Plans: `classify`, `diagnose`, `support-packet`. Exact/ranked evidence first; selected detail only; skipped lanes -> `data_gaps`.
 ### Evidence Query Recipes
 
-- `project-by-git`/diagnose: `endorctl agent api --agent-id troubleshooting list -r Project -n <namespace> --filter 'spec.git.full_name=="<owner/repo>"' --page-size 2 --field-mask "uuid,meta.name,meta.parent_uuid,spec.git" -o json`
+- `project-by-git`/diagnose: `endorctl agent api --agent-id troubleshooting list -r Project -n <namespace> --filter 'spec.git.full_name=="<owner/repo-lowercased>"' --page-size 2 --field-mask "uuid,meta.name,meta.parent_uuid,spec.git" -o json`
 - `active-main-finding-count`/diagnose: `endorctl agent api --agent-id troubleshooting list -r Finding -n <namespace> --filter 'context.type==CONTEXT_TYPE_MAIN and spec.project_uuid=="<PROJECT_UUID>" and spec.dismiss==false' --count -o json`
 - `scan-result-by-uuid`/diagnose: `endorctl agent api --agent-id troubleshooting get -r ScanResult -n <namespace> --uuid <SCAN_RESULT_UUID> --field-mask "uuid,meta.name,meta.parent_uuid,meta.create_time,meta.update_time,spec.status,spec.type,spec.exit_code,spec.stats,spec.components_executed,spec.refs,spec.provisioning_result,spec.logs" -o json`. Read the returned fields directly.
 - `finding-by-uuid`/diagnose: `endorctl agent api --agent-id troubleshooting get -r Finding -n <namespace> --uuid <FINDING_UUID> -o json`

@@ -31,6 +31,16 @@ The custom agents set `target: vscode`, so they appear only in VS Code. On the
 Copilot CLI and the Copilot app, the skills of the same name carry the same
 workflow contract; say so rather than reporting the agents as broken.
 
+The install route differs by surface. Identify the surface first, then give
+only the matching route.
+
+- Copilot app: the app installs only from a marketplace and has no
+  install-from-source route. The user adds `endorlabs/copilot-plugin` as a
+  marketplace source, then installs `endor-labs-agent-kit` from it. This repo
+  carries `.github/plugin/marketplace.json` for exactly this purpose.
+- Copilot CLI: `copilot plugin marketplace add endorlabs/copilot-plugin` and
+  then install `endor-labs-agent-kit`, or install the repo directly with
+  `copilot plugin install endorlabs/copilot-plugin`.
 - VS Code: Command Palette -> `Chat: Install Plugin From Source` and point it
   at `endorlabs/copilot-plugin`, whose root is this plugin, or register a local
   checkout in settings:
@@ -39,11 +49,17 @@ workflow contract; say so rather than reporting the agents as broken.
 "chat.pluginLocations": { "C:\\src\\copilot-plugin": true, "/path/to/copilot-plugin": true }
 ```
 
-- Copilot CLI:
+If a host reports `File not found: marketplace.json, .plugin/marketplace.json,
+.github/plugin/marketplace.json, .claude-plugin/marketplace.json`, it was asked
+to add a marketplace from a repository that has no marketplace manifest in any
+of those four locations. Report the exact source that was tried and confirm the
+spelling; do not diagnose it as an authentication or plugin-content problem.
 
-```bash
-copilot plugin install endorlabs/copilot-plugin
-```
+For org-wide distribution, `extraKnownMarketplaces` in
+`.github/copilot/settings.json` registers the marketplace for a repository, and
+`managed-settings.json` supports `enabledPlugins`, `extraKnownMarketplaces`,
+and `strictKnownMarketplaces` for enterprise-managed installs. Describe these
+as options; never write them without explicit approval.
 
 Reload the window / restart the Copilot surface after installing so the
 skills, agents, and MCP server become visible.
@@ -236,9 +252,9 @@ API calls. Each selected workflow must pass its canonical recipe id through
 Endor MCP only when a selected MCP-capable workflow needs it or the user
 explicitly asks for it.
 
-The distribution may include ready-to-use Endor MCP config snippets such as
-root `.mcp.json` or Gemini `mcpServers` metadata. Treat those files as setup
-inputs, not permission to start or register MCP without approval.
+This plugin's own `mcp.json` declares the `endor-cli-tools` server ready to
+use. Treat it, and any other MCP config the host already holds, as a setup
+input rather than permission to start or register MCP without approval.
 
 When MCP setup is requested:
 
