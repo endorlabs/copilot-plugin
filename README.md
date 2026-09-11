@@ -25,10 +25,18 @@ plugin, clear the host cache when supported, and start a fresh host session.
 | `mcp.json` (`endor-cli-tools`) | Any host that supports plugin MCP servers. |
 | `com.github.copilot/agents/<id>.agent.md` | VS Code only — each agent sets `target: vscode`. |
 | `com.github.copilot/rules/` | Copilot repo-wide rules. |
+| `.github/plugin/marketplace.json` | Lets the Copilot app and CLI add this repo as a marketplace. |
 
 The custom agents are VS Code-specific. On the Copilot CLI and the Copilot app,
 use the matching skill of the same name instead; the skills carry the same
 workflow contract.
+
+The Copilot app installs plugins only from a marketplace, so this repo ships
+its own manifest at `.github/plugin/marketplace.json` — one of the four
+locations a host searches (`marketplace.json`, `.plugin/marketplace.json`,
+`.github/plugin/marketplace.json`, `.claude-plugin/marketplace.json`). The
+entry's `source` names this repo with no `path`, which is how a marketplace
+points at a plugin whose `plugin.json` is at the repository root.
 
 ## Requirements
 
@@ -50,22 +58,53 @@ picker has selected.
 
 ## Install
 
-VS Code — Command Palette -> `Chat: Install Plugin From Source`, pointed at
+This repository is both the plugin and a single-entry plugin marketplace, so
+every Copilot surface has a working route. `plugin.json` sits at the repo root
+and `.github/plugin/marketplace.json` lists it.
+
+**Copilot app** — the app installs plugins only from a marketplace; it has no
+install-from-source route. Add this repo as a marketplace source:
+
+```text
+endorlabs/copilot-plugin
+```
+
+then install **endor-labs-agent-kit** from it. If the app reports
+`File not found: marketplace.json, .plugin/marketplace.json, ...`, it is
+looking at a repo with no marketplace manifest — check the source spelling.
+
+**Copilot CLI** — either route works:
+
+```bash
+copilot plugin marketplace add endorlabs/copilot-plugin
+```
+
+```bash
+copilot plugin install endorlabs/copilot-plugin
+```
+
+**VS Code** — Command Palette -> `Chat: Install Plugin From Source`, pointed at
 this repository, or register a local checkout in settings:
 
 ```json
 "chat.pluginLocations": { "C:\\src\\copilot-plugin": true, "/path/to/copilot-plugin": true }
 ```
 
-Copilot CLI:
-
-```bash
-copilot plugin install endorlabs/copilot-plugin
-```
-
 Reload the window or restart the Copilot surface after installing so the
 skills, agents, and MCP server become visible. Installed plugins appear under
 **Agent Plugins - Installed**.
+
+To offer the plugin org-wide without each developer adding the marketplace by
+hand, add it to `extraKnownMarketplaces` in `.github/copilot/settings.json`, or
+to `managed-settings.json` for enterprise-managed installs.
+
+### Releasing
+
+The marketplace entry's `source` pins no `ref` or `sha`, so it tracks the
+default branch. Keep three values in step on every release — `version` in
+`plugin.json`, `version` in `.github/plugin/marketplace.json`, and the
+`Version:` line above — and add a `"ref": "v<version>"` to the marketplace
+`source` once you start tagging releases, so installs stop following `main`.
 
 ## Set Up This Machine
 

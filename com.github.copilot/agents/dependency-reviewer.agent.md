@@ -195,6 +195,7 @@ These notes augment the workflow above. Its output contracts, hard guardrails, a
 ### Global Rules
 
 - Context first; Namespace provenance; Efficient Endor queries; Large result delivery; Verified evidence only; Evidence ledger; Data gaps.
+- Git identity casing: Endor normalizes `spec.git.full_name` to lowercase. Lowercase the owner and repository before filtering on it — a GitHub display identity like `Contrast-Security-OSS/demo-netflicks` returns zero rows, while `contrast-security-oss/demo-netflicks` matches. Never lowercase `meta.name`, which keeps the original casing (`https://github.com/Contrast-Security-OSS/demo-netflicks.git`); use it verbatim. Treat zero rows from a correctly lowercased selector as a real miss: retry the same selector with `--traverse`, then report the project as absent. Never conclude a project is missing, unmonitored, or unscanned on the strength of a casing mismatch.
 - Large results: never `--list-all`. Scope every list to a project or namespace, then use `--count` for totals, `--group-aggregation-paths <field>` for grouped counts, `--group-unique-count-paths uuid` for duplicate detection (`count != unique_count` means duplicates), and `--field-mask` with `--page-size` no greater than 100 plus `--page-token`/`--page-id` to continue. Put `query_completeness=<bounded|aggregate|complete>;result_count=<n>;unique_count=<n>` in `evidence_queries[].reason`. Treat `deadline-exceeded` as a `data_gaps` entry and narrow the filter; never retry the same query unchanged.
 
 ### Evidence Gate Contract
@@ -223,7 +224,7 @@ Route once to an exact package decision, exact package risk summary, or bounded 
 ### Evidence Query Recipes
 
 - `repository-local-manifest-inventory`/repository-review: the host's file-search tool over `**/{pom.xml,build.gradle,package.json,go.mod,requirements*.txt,pyproject.toml}`, limited to about four directory levels. Do not shell out to `find`, `Get-ChildItem`, or `dir` for this.
-- `repository-project-by-git`/repository-review: `endorctl agent api --agent-id dependency-reviewer list -r Project -n <namespace> --filter 'spec.git.full_name=="<owner/repo>"' --page-size 2 --field-mask "uuid,meta.name,meta.parent_uuid,spec.git" -o json`
+- `repository-project-by-git`/repository-review: `endorctl agent api --agent-id dependency-reviewer list -r Project -n <namespace> --filter 'spec.git.full_name=="<owner/repo-lowercased>"' --page-size 2 --field-mask "uuid,meta.name,meta.parent_uuid,spec.git" -o json`
 - `repository-package-version-exact`/repository-review: `endorctl agent api --agent-id dependency-reviewer list -r PackageVersion -n oss --filter 'meta.name=="<PACKAGE_URL_PREFIX>://<PACKAGE_NAME>@<VERSION>"' --field-mask "uuid,meta.name,spec.ecosystem,spec.package_name,spec.release_timestamp" -o json`
 - `repository-selected-package-findings`/repository-review: `endorctl agent api --agent-id dependency-reviewer list -r Finding -n <namespace> --filter 'context.type==CONTEXT_TYPE_MAIN and spec.project_uuid=="<PROJECT_UUID>" and spec.finding_categories contains FINDING_CATEGORY_VULNERABILITY and spec.dismiss==false' --field-mask "uuid,context.type,spec.project_uuid,spec.target_dependency_package_name,spec.level" -o json`
 

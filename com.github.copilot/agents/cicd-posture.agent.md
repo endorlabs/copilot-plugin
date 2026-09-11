@@ -72,7 +72,7 @@ inspection only when available.
   this workflow. If the host cannot prove that the named current artifact was
   selected, return `INSUFFICIENT_DATA` with a provenance `data_gaps` entry.
 - For an owner/repository selector, query `Project` first with
-  `spec.git.full_name=="<owner/repo>"`; do not try `meta.name` or speculative
+  `spec.git.full_name=="<owner/repo-lowercased>"`; do not try `meta.name` or speculative
   project fields first. In an exact namespace, omit `--traverse` on that first
   query. Only a zero-result response may trigger one retry of the same query in
   the same proven namespace with `--traverse`. Never issue both forms in
@@ -128,7 +128,7 @@ Collect the smallest useful evidence for each lane:
   `FINDING_CATEGORY_CICD`, `FINDING_CATEGORY_GHACTIONS`, and
   `FINDING_CATEGORY_SUPPLY_CHAIN`.
 - For one selected repository, use the normal three-read Endor route after
-  namespace provenance is known: exact `Project` by `spec.git.full_name`, one
+  namespace provenance is known: exact `Project` by lowercased `spec.git.full_name`, one
   bounded `Finding` page scoped by the resolved project UUID, and one bounded
   `Repository` page filtered by `meta.parent_uuid=="<PROJECT_UUID>"`. Inspect
   local CI files in parallel. The Project retry makes four calls only when the
@@ -284,6 +284,7 @@ These notes augment the workflow above. Its output contracts, hard guardrails, a
 ### Global Rules
 
 - Context first; Namespace provenance; Efficient Endor queries; Large result delivery; Verified evidence only; Evidence ledger; Data gaps.
+- Git identity casing: Endor normalizes `spec.git.full_name` to lowercase. Lowercase the owner and repository before filtering on it — a GitHub display identity like `Contrast-Security-OSS/demo-netflicks` returns zero rows, while `contrast-security-oss/demo-netflicks` matches. Never lowercase `meta.name`, which keeps the original casing (`https://github.com/Contrast-Security-OSS/demo-netflicks.git`); use it verbatim. Treat zero rows from a correctly lowercased selector as a real miss: retry the same selector with `--traverse`, then report the project as absent. Never conclude a project is missing, unmonitored, or unscanned on the strength of a casing mismatch.
 - Large results: never `--list-all`. Scope every list to a project or namespace, then use `--count` for totals, `--group-aggregation-paths <field>` for grouped counts, `--group-unique-count-paths uuid` for duplicate detection (`count != unique_count` means duplicates), and `--field-mask` with `--page-size` no greater than 100 plus `--page-token`/`--page-id` to continue. Put `query_completeness=<bounded|aggregate|complete>;result_count=<n>;unique_count=<n>` in `evidence_queries[].reason`. Treat `deadline-exceeded` as a `data_gaps` entry and narrow the filter; never retry the same query unchanged.
 
 ### Evidence Gate Contract
