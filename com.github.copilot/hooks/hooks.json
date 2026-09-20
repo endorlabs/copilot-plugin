@@ -1,0 +1,14 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "type": "command",
+        "command": "sh \"${CLAUDE_PLUGIN_ROOT}/com.github.copilot/hooks/dependency-introduction.sh\"",
+        "osx": "sh \"${CLAUDE_PLUGIN_ROOT}/com.github.copilot/hooks/dependency-introduction.sh\"",
+        "linux": "sh \"${CLAUDE_PLUGIN_ROOT}/com.github.copilot/hooks/dependency-introduction.sh\"",
+        "windows": "powershell -NoProfile -ExecutionPolicy Bypass -File \"${CLAUDE_PLUGIN_ROOT}\\com.github.copilot\\hooks\\dependency-introduction.ps1\"",
+        "timeout": 10
+      }
+    ]
+  }
+}
