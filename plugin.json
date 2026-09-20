@@ -4,7 +4,7 @@
     "name": "Endor Labs",
     "url": "https://endorlabs.com"
   },
-  "description": "Endor Labs security workflow skills, agents, and MCP server for GitHub Copilot. Requires only the endorctl binary: no Node, Python, or Unix tools.",
+  "description": "Endor Labs security workflow skills, agents, rules, and hooks for GitHub Copilot. Requires only the endorctl binary: no MCP server, Node, Python, or Unix tools.",
   "extensions": {
     "com.github.copilot": {}
   },
@@ -15,11 +15,10 @@
     "security",
     "sca",
     "sast",
-    "mcp",
     "appsec"
   ],
   "license": "MIT",
   "name": "endor-labs-agent-kit",
   "repository": "https://github.com/endorlabs/copilot-plugin",
-  "version": "2.3.0"
+  "version": "3.0.0"
 }
