@@ -13,6 +13,7 @@ Generated for the Endor Labs Agent Kit Copilot agent plugin (Agent Plugins 1.0).
 - `CI/CD And Supply Chain Posture` -> skill `cicd-posture`, agent `cicd-posture`
 - `Configuration Automation` -> skill `configuration-automation`, agent `configuration-automation`
 - `Dependency Reviewer` -> skill `dependency-reviewer`, agent `dependency-reviewer`
+- `Diff Scan` -> skill `diff-scan`, agent `diff-scan`
 - `Findings Browser` -> skill `findings-browser`, agent `findings-browser`
 - `Malware Responder` -> skill `malware-responder`, agent `malware-responder`
 - `OSS Upgrade Investigator` -> skill `oss-upgrade-investigator`, agent `oss-upgrade-investigator`
@@ -64,6 +65,33 @@ as options; never write them without explicit approval.
 Reload the window / restart the Copilot surface after installing so the
 skills and agents become visible.
 
+## Bundled Hook
+
+The plugin ships one hook, declared in `com.github.copilot/hooks/hooks.json`:
+
+| Event | Script | Behaviour |
+| --- | --- | --- |
+| `PostToolUse` | `dependency-introduction.sh` / `.ps1` | Reminds the agent to check newly added or upgraded dependencies against Endor. Never blocks. |
+
+Hook support is preview, and coverage differs by surface: VS Code and the
+Copilot CLI run hooks, the Copilot app may not. A surface that ignores the hook
+loses only the reminder — every workflow still works when invoked directly, so
+report an absent hook as reduced coverage, not as a broken install.
+
+The hook needs no new tooling. On macOS and Linux it is POSIX `sh` plus `grep`;
+on Windows it is in-box PowerShell. It never calls `jq`, `node`, `python`, or
+`npx`, matching the rest of the plugin.
+
+Report the hook in the readiness report: whether `hooks.json` is present in the
+installed plugin, whether the surface supports hooks, and — on macOS and Linux
+— whether `dependency-introduction.sh` carries its execute bit. Do not install,
+edit, enable, or disable hooks without explicit approval.
+
+If the hook is present but never fires, check in this order: the surface
+supports hooks at all; the plugin is installed and the window was reloaded; the
+plugin-root variable in `hooks.json` resolves on this host, since an unresolved
+root yields a path that silently does not exist.
+
 # Endor Agent Kit Setup
 
 Use this setup workflow when the user asks to install, check, update, or remove
@@ -98,6 +126,8 @@ Setup may:
   mismatch is the likely cause of a missing tenant namespace.
 - Check `gh` authentication and point to official installation guidance.
 - Verify `endorctl agent api` access for workflows that read Endor evidence.
+- Report whether the bundled `PostToolUse` hook is installed and whether the
+  current Copilot surface supports hooks.
 - Explain the exact file, command, and validation step before proposing any
   host configuration change.
 - Install, update, or uninstall host-specific Agent Kit support files only after
@@ -117,6 +147,7 @@ Setup must not:
 - Install `gh`, package managers, language runtimes, Docker, JDKs, or build
   tooling.
 - Start, register, or remove an MCP server on the user's behalf.
+- Install, edit, enable, or disable plugin hooks without explicit approval.
 
 ## Cross-Platform Notes
 
@@ -127,6 +158,13 @@ wherever `endorctl` is expected. Use the host's own file tools to inspect
 config files rather than `cat`, `type`, or `Get-Content`. Where a PATH change
 is offered, prefer a route that needs no execution-policy change and no
 administrator rights.
+
+That preference is about what setup asks the *user* to change. It does not
+conflict with the bundled hook's `powershell -NoProfile -ExecutionPolicy Bypass
+-File ...` command line: `-ExecutionPolicy Bypass` applies to that one
+invocation only, needs no administrator rights, and leaves the machine and user
+execution policies untouched. Say so if a user asks why the hook uses it, and
+do not offer to change a persistent execution policy.
 
 ## Endor Region
 
@@ -246,6 +284,10 @@ Include these sections when relevant:
 - Needs action
 - Optional checks
 - Available fixes
+
+Include a hook line alongside the tooling lines, for example
+`Dependency hook: hooks.json present, surface supports hooks` or
+`Dependency hook: present, surface does not run hooks — reminder unavailable`.
 
 For Endor auth, report sanitized fields only:
 
@@ -369,8 +411,11 @@ retrying. If no tenant choices appear at all, follow
 
 ## Endor CLI API Access
 
-Require `endorctl agent api --help` to succeed for workflows that use Endor CLI
-API calls. Each selected workflow must pass its canonical recipe id through
+Require `endorctl agent api --agent-id endor-agent-kit-setup --help` to succeed
+for workflows that use Endor CLI API calls. Probe it with that `--agent-id`
+rather than bare `--help`: hosts that enforce agent attribution reject an
+`endorctl agent api` invocation with an empty `--agent-id`, so a bare `--help`
+probe reports a readiness failure that is not real. Each selected workflow must pass its canonical recipe id through
 `--agent-id`; never fall back to the unattributed legacy API command.
 
 This plugin ships no MCP server. Every workflow reads Endor evidence through
